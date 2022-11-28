@@ -1,6 +1,6 @@
 # Carder Brooks
-# Assignment 5
-# Milestone #1 Implementation
+# Software Engineering I
+# Portfolio Project
 
 # references cited:
     # https://realpython.com/pysimplegui-python/
@@ -50,10 +50,48 @@ key_dict = {
     "8": "---..",
     "9": "----.",
     "0": "-----",
-    " ": "   "
+    " ": " / "
 }
 
-# get some color going!!!
+reverse_key_dict = {
+    ".-": "A",
+    "-...": "B",
+    "-.-.": "C",
+    "-..": "D",
+    ".": "E",
+    "..-.": "F",
+    "--.": "G",
+    "....": "H",
+    "..": "I",
+    ".---":"J",
+    "-.-": "K",
+    ".-..": "L",
+    "--": "M",
+    "-.": "N",
+    "---": "O",
+    ".--.": "P",
+    "--.-": "Q",
+    ".-.": "R",
+    "...": "S",
+    "-": "T",
+    "..-": "U",
+    "...-": "V",
+    ".--": "W",
+    "-..-": "X",
+    "-.--": "Y",
+    "--..": "Z",
+    ".----": "1",
+    "..---": "2",
+    "...--": "3",
+    "....-": "4",
+    ".....": "5",
+    "-....": "6",
+    "--...": "7",
+    "---..": "8",
+    "----.": "9",
+    "-----": "0"}
+
+# color theme
 sg.theme("DarkBlue8")
 
 # initialize input value variable
@@ -61,17 +99,12 @@ read_data = ""
 
 ######################## main window sections ##############################
 
-# input type, Enlgish or Morse code
-select_input_type = [
-    [sg.Text("Select what you're translsating from.")],
-    [sg.Radio("English", "RADIO1", default=True, key="-ENGLISH-")],
-    [sg.Radio("Morse Code", "RADIO1", default=False, key="-MORSE-")],
-    [sg.HorizontalSeparator()], [sg.HorizontalSeparator()]
-]
 
 # receive input from the user, either text or file upload
 input_row = [
-    [sg.Text("Enter or upload your message.")],
+    [sg.Text("Enter or upload your message. For messages in English, enter only letters and/or numerals.")],
+    [sg.Text("For messages in Morse code, use periods for dots and hyphens for dashes. Put single spaces between "
+             "letters in the same word and forward slashes between words.")],
     [sg.InputText('Type in or copy & paste text here', size=(100, 1), enable_events=True, key="-TEXT-")],
     [sg.Text("OR")],
     [sg.Text("Upload a file"),
@@ -97,12 +130,11 @@ extras_row = [
 
 ######################## end main window sections ########################
 
-###### build the main window
+###### build and create the main window
 main_layout = [
-    [select_input_type, input_row, submission_row, extras_row]
+    [input_row, submission_row, extras_row]
 ]
 
-##### create main window
 main_window = sg.Window("Morse Code Translator", main_layout)
 
 
@@ -169,27 +201,57 @@ while True:
 
 # user submits input
     if main_event == "Submit":
-
-        #make input string upper-case for proper translation
-        read_data = read_data.upper()
-        # initialite variable
         output = ""
+        counter = 0
 
-        # translation engine
-        for char in read_data:
+        # if entered message is in Morse code
+        if read_data[0] == "." or read_data[0] == "-":
+            letter = ""
+            for char in read_data:
+                counter += 1
+                # detect letter
+                if char != " " and char != "/":
+                    letter = letter + char
+                if char == " " or char == "/" or counter == (len(read_data)):
+                    # if Morse letter not recognized
+                    if letter not in reverse_key_dict:
+                        error_layout = [
+                            [sg.Text(
+                                "Morse letter not found. Be sure that each letter is separated by a space." 
+                                "Provided translation may be inaccurate.")]
+                        ]
+                        error_window = sg.Window("ERROR!", error_layout, margins=(100, 50))
+                        error_event, error_values = error_window.read()
 
-            # character is not supported
-            if char not in key_dict:
-                error_layout = [
-                    [sg.Text("Unsupported input type. Please only enter letters and numerals. Provided translation "
-                             "will omit any other characters.")]
-                ]
-                error_window = sg.Window("ERROR!", error_layout, margins=(100, 50))
-                error_event, error_values = error_window.read()
+                    # at end of letter or last letter
+                    elif char == " " or counter == (len(read_data)):
+                        output = output + reverse_key_dict[letter]
+                        letter = ""
 
-            # character supported
-            else:
-                output = output + key_dict[char] + " "
+                    # at end of word
+                    elif char == "/":
+                        output = output + reverse_key_dict[letter] + " "
+                        letter = ""
+
+        else:
+            #make input string upper-case for proper translation
+            read_data = read_data.upper()
+
+            # translation engine
+            for char in read_data:
+
+                # character is not supported
+                if char not in key_dict:
+                    error_layout = [
+                        [sg.Text("Unsupported input type. Please only enter letters and numerals. Provided translation "
+                                 "will omit any other characters.")]
+                    ]
+                    error_window = sg.Window("ERROR!", error_layout, margins=(100, 50))
+                    error_event, error_values = error_window.read()
+
+                # character supported
+                else:
+                    output = output + key_dict[char] + " "
 
         input_column = [
             [sg.Text("Original Message:")],
@@ -206,8 +268,25 @@ while True:
             [sg.Column(input_column), sg.VSeperator(), sg.Column(output_column)],
             [], [], [], [], [], [], [], [], [], [], [],
             [sg.Button("Download this as a file?", key="-DOWNLOAD-")],
+            [sg.Button("Hear your message in English?", key="-HEAR-")]
         ]
         window = sg.Window("Translation", out_layout, margins=(100, 50))
         out_event, out_values = window.read()
+
+        if out_event == "-HEAR-":
+            if read_data[0] != "." and read_data[0] != "-":
+                with open('sample.txt', 'w', encoding="utf-8") as f:
+                    f.write(read_data)
+            else:
+                with open('sample.txt', 'w', encoding="utf-8") as f:
+                    f.write(output)
+
+        if out_event == "-DOWNLOAD-":
+            with open ('session.txt', 'w', encoding="utf-8") as download_file:
+                download_file.write("Original Message: ")
+                download_file.write(read_data)
+                download_file.write("\n")
+                download_file.write("Translated Message: ")
+                download_file.write(output)
 
 main_window.close()
